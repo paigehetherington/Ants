@@ -1,6 +1,7 @@
 package sample;
 
 import com.sun.org.apache.bcel.internal.generic.ARRAYLENGTH;
+import com.sun.org.apache.xerces.internal.impl.xs.identity.Selector;
 import com.sun.prism.Graphics;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
@@ -31,7 +32,7 @@ public class Main extends Application {
         ArrayList<Ant> ants = new ArrayList<>();
         for (int i = 0; i < ANT_COUNT; i++) {
             Random r = new Random();
-            ants.add(new Ant(r.nextInt(WIDTH), r.nextInt(HEIGHT)));
+            ants.add(new Ant(r.nextInt(WIDTH), r.nextInt(HEIGHT), Color.BLACK));
         }
         return ants;
     }
@@ -39,10 +40,31 @@ public class Main extends Application {
     void drawAnts(GraphicsContext context) {
         context.clearRect(0, 0, WIDTH, HEIGHT);
         for (Ant ant : ants) {
-            context.setFill(Color.BLACK);
+            context.setFill(ant.c);
             context.fillOval(ant.x, ant.y, 5, 5);
         }
     }
+
+    Ant aggravateAnt(Ant ant) {
+        try {
+            Thread.sleep(1);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        ArrayList<Ant> nearAnts = ants.stream()
+                .filter(ant2 -> {
+                    return (Math.abs(ant.x - ant2.x) < 10) && (Math.abs(ant.y - ant2.y) < 10);
+                })
+                .collect(Collectors.toCollection(ArrayList<Ant>::new));
+        if (nearAnts.size() > 1) {
+            ant.c = Color.RED;
+
+        } else {
+            ant.c = Color.BLACK;
+        }
+        return ant;
+    }
+
 
     static double randomStep() {
         return Math.random() * 2 - 1;
@@ -61,6 +83,7 @@ public class Main extends Application {
 
     void updateAnts() {
         ants = ants.parallelStream()
+                .map(this::aggravateAnt)
                 .map(this::moveAnt) //this for nonstatic methods
                 .collect(Collectors.toCollection(ArrayList<Ant>::new));
     }
